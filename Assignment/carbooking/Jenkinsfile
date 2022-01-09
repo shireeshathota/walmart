@@ -4,9 +4,19 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-            bat 'mvn clean package deploy -DskipMunitTests -DmuleDeploy -DmuleVersion=4.4.0 -Dusername=Apisero259 -Dpassword=Apisero259 -DapplicationName=carbooking -Denvironment=Sandbox -DbusinessGroup="Apisero" -DworkerType=SMALL
+	         git 'https://github.com/shireeshathota/mygit'
+            bat 'mvn clean package deploy -DskipMunitTests -DmuleDeploy -DmuleVersion=4.4.0 -Dusername=Apisero259 -Dpassword=Apisero259 -DapplicationName=carbooking -Denvironment=Sandbox -DbusinessGroup="Apisero" -DworkerType=SMALL'
       }
     }
+	
+	
+	 stage('Deploy') {
+      steps {
+	         git 'https://github.com/shireeshathota/mygit'
+            bat 'mvn clean package deploy -DskipMunitTests -DmuleDeploy -DmuleVersion=4.4.0 -Dusername=Apisero259 -Dpassword=Apisero259 -DapplicationName=carbooking -Denvironment=Sandbox -DbusinessGroup="Apisero" -DworkerType=SMALL'
+      }
+    }
+	
 	}
 	
 }
