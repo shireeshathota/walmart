@@ -1,0 +1,12 @@
+http:
+  port: "8081"
+  
+db:
+  host: "sql10.freemysqlhosting.net"
+  port: "3306"
+  user: "sql10463951"
+  password: "Zkci92rK7G"
+  database: "sql10463951"
+  
+filelocation:
+ filepath:'/carbooking/src/main/resources/'
