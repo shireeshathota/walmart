@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<addCustHotelBooking>
+         <customerName>cust1</customerName>
+         <mobileNo>?</mobileNo>
+         <email>api@apisero.com</email>
+         <hotelName>Radisson</hotelName>
+         <roomNum>50</roomNum>
+         <location>Gachibowli</location>
+         <roomType>AC</roomType>
+         <checkIn>26-01-2022</checkIn>
+         <checkOut>26-01-2022</checkOut>
+         <totalAmount>2000</totalAmount>
+</addCustHotelBooking>

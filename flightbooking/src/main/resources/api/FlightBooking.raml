@@ -1,0 +1,94 @@
+#%RAML 1.0
+title: BookmyHoliday
+version: v1
+
+protocols:
+  - HTTPS
+  - HTTP
+
+types:
+  FlightsBooking: !include datatypes/ListAllFlights.raml
+  
+  
+traits:
+    FlightTraits: !include Traits/error_response.raml
+
+securitySchemes:
+  client-id-required: !include securityscheme/securityScheme.raml
+
+
+securedBy:
+  - client-id-required
+
+/flights:
+  is:
+    - FlightTraits
+
+  get:
+    queryParameters:
+      origin:
+        required: false
+        enum:
+          - RSI
+          - ANZ
+          - AMG
+      destination:
+        required: false
+        enum:
+          - CLE
+          - SFO
+          - LAX  
+    responses:
+      200:
+        body:
+          application/json:                            
+            examples:
+              output: !include example/SampleGetAllFlights.raml
+      
+  post:
+    body:
+      application/json:        
+        examples:
+          output: !include example/FlightsNoID.raml
+    responses:
+      201:
+        body:
+          application/json:
+            example:
+              message: Flight data created successfully
+
+
+  put:
+    body:
+        application/json:
+          
+          examples:
+            input: !include example/FlightsNoID.raml
+    responses:
+        200:
+          body:
+            application/json:
+              example:
+                message: Flight data updated successfully
+
+/{ID}:
+  get:
+      responses:
+        200:
+          body:
+            application/json:
+              examples:
+                output: !include example/SampleGetFlight.raml
+  
+  delete:
+    responses:
+        200:
+          body:
+            application/json:
+              example:
+                message: Flight data cancelled
+    
+    
+    
+
+    

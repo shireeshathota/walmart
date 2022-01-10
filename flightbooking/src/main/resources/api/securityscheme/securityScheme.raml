@@ -1,0 +1,16 @@
+#%RAML 1.0 SecurityScheme
+type: x-client-id-required
+description: This will force to have client-id and client-secret in incoming request
+describedBy:
+  headers:
+    client_id:
+      example: asdfg      
+    client_secret:
+    Authorization:
+      
+  responses:
+    401:
+      body:
+        application/json:
+          example:
+            " 401 - UnAuthorized Access"

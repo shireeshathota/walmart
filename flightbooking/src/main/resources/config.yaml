@@ -1,0 +1,15 @@
+http:
+  port: "8081"
+  
+db:
+  host: "sql10.freemysqlhosting.net"
+  port: "3306"
+  user: "sql10463951"
+  password: "Zkci92rK7G"
+  database: "sql10463951"
+  
+hotel:
+  wsdl: "http://hotelbooking.us-e2.cloudhub.io/hotel/hotelbookingSOAP?wsdl"
+  service: "hotel"
+  port: "hotelbookingSOAP"
+  address: "http://hotelbooking.us-e2.cloudhub.io/hotel/hotelbookingSOAP"

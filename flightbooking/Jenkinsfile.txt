@@ -1,0 +1,22 @@
+pipeline {
+
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+	         git 'https://github.com/shireeshathota/flightbooking.git'
+            bat "mvn -X clean package deploy -DmuleVersion=4.4.0 -Dusername=Apisero259 -Dpassword=Apisero259 -DapplicationName=flightbooking -Denvironment=Sandbox -Dworkers-1 -Dworker.type-Micro -DmuleDeploy"
+      }
+    }
+	
+	
+	 stage('Deploy') {
+      steps {
+	         git 'https://github.com/shireeshathota/flightbooking.git'
+            bat "mvn -X clean package deploy -DmuleVersion=4.4.0 -Dusername=Apisero259 -Dpassword=Apisero259 -DapplicationName=flightbooking -Denvironment=Sandbox -Dworkers-1 -Dworker.type-Micro -DmuleDeploy"
+      }
+    }
+	
+	}
+	
+}

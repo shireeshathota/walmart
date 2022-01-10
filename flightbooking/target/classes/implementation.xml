@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="3101beff-5bed-4b20-bb92-1cde49f0fbaa" />
+	<flow name="getflight" doc:id="7e321692-022d-41af-8c37-82385113a7a8" >
+		<logger level="INFO" doc:name="StartLog" doc:id="1c9de9a8-8a46-41ed-a0f1-be922ecc6513" message="getFlights flow started"/>
+		<db:select doc:name="FetchFlightsData" doc:id="8a5eb5d5-8a05-45b4-8e29-1ee0f7f05031" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from FlightBD]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="JAVA_To_JSON" doc:id="7b9a9a9e-f3c3-4b89-8e39-b0dc7ee2c93a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="EndLog" doc:id="05884f9a-40c7-4549-bc90-87fd77d58b7e" message="#[payload]"/>
+	</flow>
+	<flow name="getflightsById" doc:id="9151fb96-e9e5-4589-9dd7-11adbd3fca17" >
+		<logger level="INFO" doc:name="Logger" doc:id="7dbfc0bb-6890-4791-a94e-8116d685ff22" message="getFlightsByID flow started"/>
+		<db:select doc:name="FetchFlightsById" doc:id="bd1b358d-b235-4dee-beaf-a28db505c48a" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from FlightBD where F_ID=:flightid]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  flightid : message.attributes.uriParams.ID
+  }]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="JAVA_To_JSON" doc:id="1d3b1eb9-7c90-4a1f-bcf0-19bb7f4c4561" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="92132a3a-5417-4d17-a251-1bcfda84191e" message="#[payload]"/>
+	</flow>
+	
+	<flow name="postFlights" doc:id="0bb27cb6-e9d8-4685-bf15-717ac1adfc93" >
+		<logger level="INFO" doc:name="StartLog" doc:id="d201d460-7d0e-4103-849c-2ee421630215" message="#['postFlights flow started \n:' : payload]"/>
+		<db:select doc:name="GetSeqID" doc:id="36265612-b866-4f4f-bee1-acaf2d1d981c" config-ref="Database_Config">
+			<db:sql ><![CDATA[select Max(Cust_id) as CUSTID from CustflightDetails]]></db:sql>
+		</db:select>
+		<set-variable value='#[payload.CUSTID[0] + 1 default 1]' doc:name="IncrementBy1" doc:id="3c704abc-8329-473b-a3d5-b6dbb94bbe8a" variableName="CustomerID"/>
+		<db:insert doc:name="InsertCustomer_Data" doc:id="772aa4bd-9277-4b97-b439-282551374627" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into CustflightDetails(CUST_ID,CUST_NAME,EMAIL_ID,CONTACT_NUM,ADDRESS,F_ID,F_CODE,F_NAME,PRICE,DEPARTUREDATETIME, ORIGIN,
+DESTINATION,PLANETYPE,BOOKING_STATUS,BOOKING_DATE,BOOKING_SEAT,ETICKET)
+values (:cust_id,:custname,:emailid,:contactnum,:address,:flightid,:flightcode,:flightname,:price,:boardingdatetime,:origin,:destination,:planetype,:bookingstatus,:bookeddateTime,:bookedseat,:eticket)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    cust_id: vars.custticket.cust_id,
+    custname: vars.custticket.Name,
+	emailid :vars.custticket.Email_Id,
+	contactnum :vars.custticket.Contact_num,
+	address:vars.custticket.Address,
+	flightid:vars.custticket.Flight_ID,
+	flightcode:vars.custticket.Flight_Code,
+	flightname:vars.custticket.Flight_Name,
+	price:vars.custticket.Ticket_Fare,
+	boardingdatetime:vars.custticket.Departure_DateTime,
+	origin:vars.custticket.From,
+	destination:vars.custticket.To,
+	planetype:vars.custticket.Plane_Type,
+	bookingstatus:"Booked",
+	bookeddateTime: vars.custticket.Date,
+	bookedseat:vars.custticket.Seat,
+	eticket:2433
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="CustTicketStatus" doc:id="9a856457-c006-4013-8533-18ddbb43f4ee">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    CustomerFlightBooking: 
+    if(payload.affectedRows >=1)
+    
+	{
+	CustomerID: vars.CustomerID,
+	CustomerName: vars.custticket.Name,
+	CustomerEmail: vars.custticket.Email_Id,
+	FlightID: vars.custticket.Flight_ID,
+	FlightName: vars.custticket.Flight_Name,
+	Status:"Tickets booked Successfully!!!"
+	}
+	else
+	Status:"Hotel booking failed!!!"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		<logger level="INFO" doc:name="EndLog" doc:id="4d63cf1b-e76a-4123-b6fa-9cca553dcab1" message='#["Ticket Status::" : payload]'/>
+	</flow>
+	<flow name="cancelFlightTicket" doc:id="e8687ff0-86f4-426d-ab80-9436d4cb66d5" >
+		<logger level="INFO" doc:name="startLog" doc:id="54e0bf22-1a9d-4876-abdc-895e5a3fcf9c" />
+		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="customerId" doc:id="06dac527-6864-4d0e-a7f2-cc66a6516751" variableName="customerId"/>
+		<validation:is-not-null doc:name="Is not null" doc:id="1027f678-0cf7-4878-8e9b-4e46b6131310" value="#[vars.customerId != null and vars.customerId != '']" message="customerid is empty"/>
+		<db:select doc:name="FetchCustID" doc:id="e8f2bf64-0ce5-4f36-9de7-d28c2c770a09" config-ref="Database_Config">
+			<db:sql ><![CDATA[select Cust_id as custid from CustflightDetails where Cust_id=:custid]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	custid:vars.customerId
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="c0ef6768-f212-4076-a712-5a0906bba99c" >
+			<when expression="#[not isEmpty(payload)]">
+				<db:delete doc:name="Valid CustID" doc:id="91daafcc-763f-4b55-8d5d-5a2a777dd2eb" config-ref="Database_Config">
+			<db:sql><![CDATA[delete from CustflightDetails where Cust_id=:custid]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	custid:vars.customerid
+}]]]></db:input-parameters>
+		</db:delete>
+				<ee:transform doc:name="Cust Status" doc:id="f0cf348a-2e83-4ed5-8c5e-f189c3712eae" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	Status:"Ticket is Cancelled"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Not Valid CustID" doc:id="52226a92-d33b-462b-8f59-347b0caa5fc9" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	Status:"Customer ID not Available"
+	
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="endLog" doc:id="fdd7600d-d323-47b2-99f2-01bfc307920d" message="#[payload]"/>
+	</flow>
+	<flow name="getAllHotels" doc:id="32e755a1-dd1c-464c-b97e-0a0a65d498d5" >
+		<logger level="INFO" doc:name="startLog" doc:id="ec792485-b01c-4784-b777-e8ab36cd73e3" message="#[payload]"/>
+		<wsc:consume operation="getAllHotels" doc:name="call getHotelService" doc:id="b72eb589-70c8-46ff-a2ed-6273c1d5456f" config-ref="Web_Service_Consumer_Config"/>
+		<ee:transform doc:name="getHotelResponse" doc:id="9d95ae14-edc9-4012-97cb-7efe5196ae3d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns ns0 http://www.bookmyhotel.org/hotel/
+---
+	payload.body.ns0#getAllhotelbookingsResponse.*ns0#Hotel map{
+				"Hotel_ID": $.hotelId,
+                "Hotel_Name": $.hotelName,
+                "Mobile_No": $.mobileNo,
+                "Email": $.email,
+                "Rating": $.rating,
+                "Location": $.location,
+                "NumberOfSeats": $.NumberOfSeats,
+                "Price": $.price
+		
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="endLog" doc:id="9499b45a-a5bf-4fe1-92cf-0c2a293938d4" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d23c3125-6ad7-452c-aef2-dcb6259438a4" type="WSC:CONNECTIVITY, WSC:INVALID_WSDL, WSC:TIMEOUT">
+				<ee:transform doc:name="getHotelDetailsError" doc:id="d79d3717-2ed0-4e2a-bce5-a3301a300a86" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": "Failed to fetch hotel details." : error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="bookMyHotel" doc:id="c994dfa7-ec6f-4961-b1c1-6f57fbd64c69" >
+		<logger level="INFO" doc:name="startLog" doc:id="aa1714b0-78f7-44ab-b902-abc4c4bfc69a" message="#[payload]"/>
+		<ee:transform doc:name="custRequest" doc:id="7c0f64c3-d968-4cc1-820f-a436a8ab086e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.bookmyhotel.org/hotel/
+---
+{
+	ns0#addCustHotelBooking: {
+		customerName:payload.customerName,
+		mobileNo:payload.mobileNo,
+		email:payload.email,
+		hotelName:payload.hotelName,
+		roomNum:payload.roomNum,
+		location:payload.location,
+		roomType:payload.roomType,
+		checkIn:payload.checkIn,
+		checkOut:payload.checkOut,
+		totalAmount:payload.totalAmount
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="addCustHotelBooking" doc:name="call addCustHotelService" doc:id="498b51db-a272-4fab-a166-6c40590753b5" config-ref="Web_Service_Consumer_Config"/>
+		<ee:transform doc:name="custResponse" doc:id="b3387b4d-e262-44ca-9d0b-0d3b7ea6393f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns ns0 http://www.bookmyhotel.org/hotel/
+---
+{
+	ns0#BookingStatus: {
+		Status: payload.body.ns0#addCustHotelBookingResponse.CustomerHotelBooking.status default ""
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="EndLog" doc:id="b3720020-a32e-4a32-a805-72a55dd255a1" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a76c6e7f-a8ad-4432-a650-279c39304ab2" type="WSC:CONNECTIVITY, WSC:INVALID_WSDL, WSC:TIMEOUT">
+				<ee:transform doc:name="error.description" doc:id="0f394751-3b81-4145-80d1-c1e5bcd7fdf5" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
