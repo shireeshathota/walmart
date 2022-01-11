@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="walmartFlow" doc:id="d22da28d-1cd7-4380-984e-918123e39863" >
+		<logger level="INFO" doc:name="StartLog" doc:id="e8c3c6d7-33ff-41de-b981-04a7d92131e0" message="#[payload]"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="0611f925-57e5-4307-b331-6fd378e594db" variableName="InputPayload"/>
+		<flow-ref doc:name="FetchProductDetaisl" doc:id="b9147bf9-43e5-4a23-bdf8-20e6424d3061" name="productDetailsFlow"/>
+		<flow-ref doc:name="FetchStoreDetails" doc:id="eecdf367-9e8b-4fa6-abbf-b123f3f0cc5e" name="storeDetailsFlow"/>
+		<flow-ref doc:name="OrderDetails" doc:id="2eba1ab6-337e-447b-a83a-174e090cbad0" name="orderDetailsFlow"/>
+		<logger level="INFO" doc:name="EndLog" doc:id="4775bedf-8718-4365-8752-5a6b0570880f" message="#[payload]"/>
+	</flow>
+	<flow name="storeDetailsFlow" doc:id="b7820826-275c-4fd1-82ac-32c552bc506c" >
+		<http:request method="GET" doc:name="Call StoreDetails Service" doc:id="96f6f6ba-b8d7-4d4a-b7f4-60fb0ab3ba4c" config-ref="HTTP_Request_configuration" path="/stores/list">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"X-Rapidapi-Host" : p('walmart.RapidapiHost'),
+	"X-Rapidapi-Key"  : p('walmart.RapidapiKey')
+	
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	postalCode : payload.data.product.location.postalCode
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="getProductByNearestStoreDetails" doc:id="5533bdd5-5197-48c8-a925-f2b6ab4a492e" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="NearestStore" ><![CDATA[%dw 2.0
+output application/json
+---
+(payload.data.storesBySearchTerm.stores orderBy $.distance)[0]
+     
+
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="d5d4473b-723c-4707-a548-97a75bd199de" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	StoreAddress:
+	 vars.NearestStore.address.address ++ ", " ++ vars.NearestStore.address.city ++ ", " ++ vars.NearestStore.address.state ++ ", " ++ vars.NearestStore.address.country ++ " (" ++ vars.NearestStore.address.postalCode ++ ")",
+     StoreId: vars.NearestStore.id,
+     StoreName: vars.NearestStore.displayName,
+     StoreDistance: vars.NearestStore.distance
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="EndLog" doc:id="1a7d4c34-76a5-4e82-b421-36412a34f7dc" message="#[payload]"/>
+	</flow>
+	<flow name="productDetailsFlow" doc:id="c3ed8225-28d1-49cc-b47a-2aadb12ebfc0" >
+		<http:request method="GET" doc:name="Request" doc:id="2b78c183-f89b-447d-96e0-7d37438a202a" config-ref="HTTP_Request_configuration" path="/products/v3/get-details">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"X-Rapidapi-Host" : p('walmart.RapidapiHost'),
+	"X-Rapidapi-Key"  : p('walmart.RapidapiKey')
+	
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	usItemId : payload.ItemId
+}]]]></http:query-params>
+		</http:request>
+		<set-variable value="#[payload.data.product]" doc:name="Set Variable" doc:id="484a00da-a6fd-46af-be8b-db04fe37735b" variableName="prodTypeId"/>
+		<logger level="INFO" doc:name="EndLog" doc:id="21010fde-d3e0-463e-b914-960601cd9172" message="#[payload]"/>
+	</flow>
+	<flow name="orderDetailsFlow" doc:id="896d832d-4546-4433-9dae-c050cd7098c2" >
+		<logger level="INFO" doc:name="StartLog" doc:id="733689f6-00e2-44ee-80ec-4c7993b2308f" message="#[payload]"/>
+		<db:insert doc:name="Insert" doc:id="dc70d508-c1a4-4663-b9ab-f336ffbb839a" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into order_details (store_id,store_name,store_address,store_distance,product_type_id,quantity)
+values(:storeid,:storename,:storeaddress,:storedistance,:producttypeid,:quantity)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	storeid:payload.StoreId,
+	storename:payload.StoreName,
+	storeaddress:payload.StoreAddress,
+	storedistance:payload.StoreDistance,
+	producttypeid:vars.prodTypeId.productTypeId,
+	quantity:vars.InputPayload.Quantity
+	
+	}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="28160302-afcb-450f-975a-b129d532060b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+	if (payload.affectedRows >=1)
+	   Message:"Order is placed successfully."
+	 else
+	   Message:"Please Try Again!!!.."
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

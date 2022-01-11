@@ -1,0 +1,18 @@
+http:
+  port: "8081"
+
+walmart:
+  host: "walmart.p.rapidapi.com"
+  port: "443"
+  protocol: "HTTPS"
+  basepath: "/"
+  RapidapiHost: "walmart.p.rapidapi.com"
+  RapidapiKey: "3023a67861msh0eb707c9fd31682p12e9c9jsn4bd95787f3d4"
+  
+db:
+ user: "c4ebatch5"
+ password: "c4ebatch@5"
+ database: "testdbc45"
+ host: "db4free.net"
+ port: "3306"
+ 
